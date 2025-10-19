@@ -10,7 +10,7 @@ class MainMenu extends StatefulWidget {
 }
 
 class _MainMenuState extends State<MainMenu> {
-  String? selectedGame; // null = ningún juego seleccionado
+  String? selectedGame;
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +173,7 @@ class _MainMenuState extends State<MainMenu> {
               }
             },
       child: Opacity(
-        opacity: isDisabled ? 0.5 : 1.0, // baja el tono si está deshabilitado
+        opacity: isDisabled ? 0.5 : 1.0,
         child: Container(
           width: 130,
           height: 24,

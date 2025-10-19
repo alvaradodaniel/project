@@ -9,11 +9,12 @@ class MathGame extends StatefulWidget {
 }
 
 class _MathGameState extends State<MathGame> {
-  int _score = 0;
   int _currentAnswer = 0;
   List<int> _options = [];
   String _currentProblem = '';
   bool _gameActive = true;
+
+  final Color accentGold = const Color(0xFFFFCB00);
 
   @override
   void initState() {
@@ -23,31 +24,29 @@ class _MathGameState extends State<MathGame> {
 
   void _generateNewProblem() {
     final random = Random();
-    int a = random.nextInt(10) + 1;
-    int b = random.nextInt(10) + 1;
+    int a = random.nextInt(9) + 1;
+    int b = random.nextInt(9) + 1;
     int c = random.nextInt(5) + 1;
-    
+
     _currentAnswer = a + b + c;
-    _currentProblem = '$a+$b+$c';
-    
-    // Generar opciones incorrectas
+    _currentProblem = '$a + $b + $c';
+
     Set<int> optionSet = {_currentAnswer};
     while (optionSet.length < 3) {
-      int wrongAnswer = _currentAnswer + random.nextInt(10) - 5;
+      int wrongAnswer = _currentAnswer + random.nextInt(9) - 4;
       if (wrongAnswer != _currentAnswer && wrongAnswer > 0) {
         optionSet.add(wrongAnswer);
       }
     }
-    
+
     _options = optionSet.toList()..shuffle();
   }
 
   void _selectAnswer(int selectedAnswer) {
     if (!_gameActive) return;
-    
+
     setState(() {
       if (selectedAnswer == _currentAnswer) {
-        _score++;
         _generateNewProblem();
       } else {
         _gameActive = false;
@@ -57,7 +56,6 @@ class _MathGameState extends State<MathGame> {
 
   void _restartGame() {
     setState(() {
-      _score = 0;
       _gameActive = true;
       _generateNewProblem();
     });
@@ -66,121 +64,98 @@ class _MathGameState extends State<MathGame> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF2C2C2C),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2C2C2C),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Score: $_score',
-          style: const TextStyle(color: Colors.white),
-        ),
-      ),
+      backgroundColor: const Color.fromARGB(255, 32, 32, 32),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(10.0),
+          padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 22.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // Área del problema
+              const SizedBox(height: 14),
               Container(
-                width: double.infinity,
-                height: 120,
+                width: 130,
+                height: 60,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF3C3C3C),
-                  borderRadius: BorderRadius.circular(15),
+                  color: const Color.fromARGB(255, 31, 31, 31),
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(4, 4),
-                    ),
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(-4, -4),
+                      // ignore: deprecated_member_use
+                      color: Color(0xFFFFCB00).withOpacity(0.13),
+                      blurRadius: 32,
                     ),
                   ],
+                  border: Border.all(
+                    color: const Color.fromARGB(255, 26, 23, 23),
+                    width: 0.7,
+                  ),
                 ),
                 child: Center(
+                  child: Text(
+                    _gameActive ? _currentProblem : 'Game Over!',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w800,
+                      fontStyle: FontStyle.italic,
+                      fontSize: 20,
+                      letterSpacing: 1.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 2),
+              Expanded(
+                child: Center(
                   child: _gameActive
-                      ? Text(
-                          _currentProblem,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        )
-                      : Column(
+                      ? Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'Game Over!',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
+                          children: _options
+                              .map(
+                                (option) => Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4.0,
+                                  ),
+                                  child: _buildAnswerButton(option),
+                                ),
+                              )
+                              .toList(),
+                        )
+                      : GestureDetector(
+                          onTap: _restartGame,
+                          child: Container(
+                            width: 130,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF826C00),
+                              border: Border.all(
+                                color: const Color(0xFFFFCB00),
+                                width: 1,
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(color: Colors.black, blurRadius: 25),
+                              ],
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'Play Again',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w800,
+                                  fontStyle: FontStyle.italic,
+                                  fontSize: 14,
+                                  height: 28.35 / 30,
+                                  letterSpacing: 0,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 5),
-                            Text(
-                              'Final Score: $_score',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                 ),
               ),
-              
-              // Opciones de respuesta
-              if (_gameActive) ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: _options.map((option) => Flexible(child: _buildAnswerButton(option))).toList(),
-                ),
-              ] else ...[
-                // Botón de reinicio
-                GestureDetector(
-                  onTap: _restartGame,
-                  child: Container(
-                    width: 200,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFD700),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(4, 4),
-                        ),
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(-4, -4),
-                        ),
-                      ],
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'Play Again',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -192,35 +167,68 @@ class _MathGameState extends State<MathGame> {
     return GestureDetector(
       onTap: () => _selectAnswer(option),
       child: Container(
-        width: 50,
-        height: 50,
+        padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
-          color: const Color(0xFF2C2C2C),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: const Color(0xFFFFD700),
-            width: 2,
+            color: const Color.fromARGB(255, 83, 83, 83),
+            width: 0.4,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(4, 4),
-            ),
-            BoxShadow(
-              color: Colors.white.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(-4, -4),
-            ),
-          ],
         ),
-        child: Center(
-          child: Text(
-            option.toString(),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+        child: Padding(
+          padding: const EdgeInsets.all(0.5),
+          child: Container(
+            height: 32,
+            width: 28,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.fromARGB(255, 17, 17, 17),
+                  Color.fromARGB(255, 34, 33, 33),
+                ],
+              ),
+              boxShadow: const [
+                BoxShadow(color: Color.fromARGB(102, 0, 0, 0), blurRadius: 10),
+              ],
+            ),
+            child: Center(
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color.fromARGB(255, 82, 82, 82),
+                      Color.fromARGB(255, 254, 201, 3),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Container(
+                  margin: const EdgeInsets.all(0.5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1F1F1F),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Center(
+                    child: Text(
+                      option.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                        fontStyle: FontStyle.italic,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
