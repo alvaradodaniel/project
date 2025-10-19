@@ -10,19 +10,18 @@ class MemoryGame extends StatefulWidget {
 }
 
 class _MemoryGameState extends State<MemoryGame> {
-  // Colores según el diseño: verde, amarillo, azul, rojo
   final List<Color> _colors = const [
-    Color(0xFF4CAF50), // Verde
-    Color(0xFFFFEB3B), // Amarillo
-    Color(0xFF2196F3), // Azul
-    Color(0xFFF44336), // Rojo
+    Color(0xFF30FE15),
+    Color(0xFFFED215),
+    Color(0xFF0066B2),
+    Color(0xFFFE1616),
   ];
 
   final List<Color> _activeColors = const [
-    Color(0xFF8BC34A), // Verde brillante
-    Color(0xFFFFF176), // Amarillo brillante
-    Color(0xFF64B5F6), // Azul brillante
-    Color(0xFFEF5350), // Rojo brillante
+    Color.fromARGB(255, 14, 75, 7),
+    Color.fromARGB(255, 99, 82, 9),
+    Color.fromARGB(255, 0, 53, 94),
+    Color.fromARGB(255, 104, 9, 9),
   ];
 
   List<int> _gameSequence = [];
@@ -30,8 +29,9 @@ class _MemoryGameState extends State<MemoryGame> {
   int _level = 0;
   bool _isPlayerTurn = false;
   bool _gameInProgress = false;
+  bool _isPlayingSequence = false;
+  bool _isAnimatingPlayerTap = false;
   int? _activeColorIndex;
-  String _message = "START";
 
   void _startGame() {
     setState(() {
@@ -45,7 +45,6 @@ class _MemoryGameState extends State<MemoryGame> {
   void _nextLevel() {
     setState(() {
       _level++;
-      _message = "$_level";
       _playerSequence = [];
       _isPlayerTurn = false;
     });
@@ -56,31 +55,41 @@ class _MemoryGameState extends State<MemoryGame> {
   }
 
   Future<void> _playSequence() async {
-    await Future.delayed(const Duration(milliseconds: 600));
+    setState(() {
+      _isPlayingSequence = true;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 400));
 
     for (int colorIndex in _gameSequence) {
       await _lightUpQuadrant(colorIndex);
-      await Future.delayed(const Duration(milliseconds: 300));
+      await Future.delayed(const Duration(milliseconds: 200));
     }
 
     setState(() {
       _isPlayerTurn = true;
-      _message = "YOUR TURN!";
+      _isPlayingSequence = false;
     });
   }
 
   Future<void> _lightUpQuadrant(int colorIndex) async {
     setState(() => _activeColorIndex = colorIndex);
-    await Future.delayed(const Duration(milliseconds: 400));
-    setState(() => _activeColorIndex = null);
+    await Future.delayed(const Duration(milliseconds: 200));
+    if (mounted) setState(() => _activeColorIndex = null);
   }
 
-  void _onPlayerTap(int colorIndex) {
-    if (!_isPlayerTurn || !_gameInProgress) return;
+  void _onPlayerTap(int colorIndex) async {
+    if (!_isPlayerTurn ||
+        !_gameInProgress ||
+        _isPlayingSequence ||
+        _isAnimatingPlayerTap)
+      return;
 
-    _lightUpQuadrant(colorIndex);
+    _isAnimatingPlayerTap = true;
+    await _lightUpQuadrant(colorIndex);
     _playerSequence.add(colorIndex);
     _checkPlayerSequence();
+    _isAnimatingPlayerTap = false;
   }
 
   void _checkPlayerSequence() {
@@ -94,25 +103,15 @@ class _MemoryGameState extends State<MemoryGame> {
     if (_playerSequence.length == _gameSequence.length) {
       setState(() {
         _isPlayerTurn = false;
-        _message = "GOOD!";
       });
-      Future.delayed(const Duration(seconds: 1), _nextLevel);
+      Future.delayed(const Duration(milliseconds: 700), _nextLevel);
     }
   }
 
   void _gameOver() {
     setState(() {
-      _message = "FAIL\nLevel $_level";
       _isPlayerTurn = false;
       _gameInProgress = false;
-    });
-
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted && !_gameInProgress) {
-        setState(() {
-          _message = "START";
-        });
-      }
     });
   }
 
@@ -122,19 +121,7 @@ class _MemoryGameState extends State<MemoryGame> {
     final double gameSize = screenWidth * 0.9;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF2C2C2C),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2C2C2C),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Level $_level',
-          style: const TextStyle(color: Colors.white),
-        ),
-      ),
+      backgroundColor: const Color.fromARGB(255, 32, 32, 32),
       body: SafeArea(
         child: Center(
           child: SizedBox(
@@ -142,46 +129,81 @@ class _MemoryGameState extends State<MemoryGame> {
             height: gameSize,
             child: Stack(
               children: [
-                // Cuadrantes de colores con el nuevo diseño
-                _buildQuadrant(0, Alignment.topLeft),
-                _buildQuadrant(1, Alignment.topRight),
-                _buildQuadrant(2, Alignment.bottomRight),
-                _buildQuadrant(3, Alignment.bottomLeft),
+                _buildQuadrant(0, Alignment(0, -.83), 0.54, 0.15),
+                _buildQuadrant(1, Alignment(.83, .0), 0.15, 0.54),
+                _buildQuadrant(2, Alignment(0, .83), 0.54, 0.15),
+                _buildQuadrant(3, Alignment(-.83, .0), 0.15, 0.54),
 
-                // Botón central
                 Center(
-                  child: GestureDetector(
-                    onTap: _gameInProgress ? null : _startGame,
-                    child: Container(
-                      width: gameSize * 0.35,
-                      height: gameSize * 0.35,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2C2C2C),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(4, 4),
-                          ),
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: const Offset(-4, -4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          _message,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: gameSize * 0.06,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                  child: SizedBox(
+                    width: 90,
+                    height: 90,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Score: $_level',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w900,
+                                fontSize: 9,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            if (!_gameInProgress && _level == 0) ...[
+                              GestureDetector(
+                                onTap: _startGame,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF826C00),
+                                    border: Border.all(
+                                      color: const Color(0xFFFFCB00),
+                                      width: 1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    Icons.play_arrow,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ] else if (!_gameInProgress && _level > 0) ...[
+                              GestureDetector(
+                                onTap: _startGame,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF826C00),
+                                    border: Border.all(
+                                      color: const Color(0xFFFFCB00),
+                                      width: 1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    Icons.refresh,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
@@ -193,48 +215,34 @@ class _MemoryGameState extends State<MemoryGame> {
     );
   }
 
-  Widget _buildQuadrant(int colorIndex, Alignment alignment) {
-    BorderRadius borderRadius;
-    switch (alignment.toString()) {
-      case 'Alignment.topLeft':
-        borderRadius = const BorderRadius.only(topLeft: Radius.circular(1000));
-        break;
-      case 'Alignment.topRight':
-        borderRadius = const BorderRadius.only(topRight: Radius.circular(1000));
-        break;
-      case 'Alignment.bottomLeft':
-        borderRadius = const BorderRadius.only(bottomLeft: Radius.circular(1000));
-        break;
-      case 'Alignment.bottomRight':
-        borderRadius = const BorderRadius.only(bottomRight: Radius.circular(1000));
-        break;
-      default:
-        borderRadius = BorderRadius.zero;
-    }
+  Widget _buildQuadrant(
+    int colorIndex,
+    Alignment alignment,
+    double width,
+    double height,
+  ) {
+    final Color base = _colors[colorIndex];
+    final Color active = _activeColors[colorIndex];
 
     return Align(
       alignment: alignment,
       child: GestureDetector(
         onTap: () => _onPlayerTap(colorIndex),
         child: FractionallySizedBox(
-          widthFactor: 0.5,
-          heightFactor: 0.5,
+          widthFactor: width,
+          heightFactor: height,
           child: Container(
             decoration: BoxDecoration(
-              color: _activeColorIndex == colorIndex 
-                  ? _activeColors[colorIndex] 
-                  : _colors[colorIndex],
-              borderRadius: borderRadius,
-              border: Border.all(color: Colors.black, width: 4),
-              boxShadow: _activeColorIndex == colorIndex
-                  ? [
-                      BoxShadow(
-                        color: _colors[colorIndex].withOpacity(0.8),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      ),
-                    ]
-                  : null,
+              color: _activeColorIndex == colorIndex ? active : base,
+              borderRadius: BorderRadius.circular(500),
+              boxShadow: [
+                BoxShadow(color: base.withOpacity(0.3), blurRadius: 25),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.8),
+                  blurRadius: 12,
+                  offset: const Offset(4, 5),
+                ),
+              ],
             ),
           ),
         ),
